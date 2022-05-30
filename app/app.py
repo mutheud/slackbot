@@ -20,24 +20,52 @@ client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 logger = logging.getLogger(__name__)
 
 
-
-
-def send_slack_message(channel, message):
+def send_slack_message(channel, blocks):
     return client.chat_postMessage(
         channel=channel,
-        text=message
+        blocks=blocks
+
+    )
+# import pdb;pdb.set_trace()
+def read_messages():
+    response=client.conversations_open(
+        users=["U03GPQR5UBU","U03GPQR5UBU"]
     )
 
+    return response
+
+# def send_slack_info(channel,blocks,user):
+#     return client.chat_postEphemeral(
+#         channel=channel,
+#         blocks=blocks,
+#         user = user
+#     )
+
+
+
+
 # ID of channel you want to post message to
-channel= "C03HDKLB6KA"
-message = "Hello world!"
+user= 'U03GPQR5UBU'
+channel ='C03HDKLB6KA'
+blocks = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "New Paid Time Off request from <example.com|Fred Enriquez>\n\n<https://example.com|View request>"
+        }
+    }
+]
+# message = "How are you?"
+
 
 try:
-    response = send_slack_message(channel,message)
+    response = send_slack_message(channel, blocks)
+
 
 except SlackApiError as e:
     print(f"Error: {e}")
 
 # Start your app
 if __name__ == "__main__":
-    app.start(port=int(os.environ.get("PORT", 3000)))
+    app.start(port=int(os.environ.get("PORT", 3001)))

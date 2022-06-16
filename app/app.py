@@ -1,71 +1,82 @@
+
 import os
-# Use the package we installed
-from slack_bolt import App
-import logging
-import os
-# Import WebClient from Python SDK (github.com/slackapi/python-slack-sdk)
+from app import *
+# from .libs.slack_api import SlackClient
+from flask import Flask
+from slackeventsapi import SlackEventAdapter
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+import json
+from datetime import datetime
 
-# Initializes your app with your bot token and signing secret
-app = App(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
-)
-
-
-# WebClient instantiates a client that can call API methods
-# When using Bolt, you can use either `app.client` or the `client` passed to listeners.
+app = Flask(__name__)
+slack_event_adapter = SlackEventAdapter(
+    os.environ.get('SIGNING_SECRET'), '/slack/events', app)
 client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
-logger = logging.getLogger(__name__)
+token = '1IRRHY820u7lLQM0LddpbuN3'
+# channel = 'C03HDKLB6KA'
+event ={}
 
 
-def send_slack_message(channel, blocks):
-    return client.chat_postMessage(
-        channel=channel,
-        blocks=blocks
+class SlackClient:
 
-    )
-# import pdb;pdb.set_trace()
-def read_messages():
-    response=client.conversations_open(
-        users=["U03GPQR5UBU","U03GPQR5UBU"]
-    )
+    def __init__(self,event,token,channel,user,day):
+        self.event = event
+        self.token = token
+        self.channel = channel
+        self.user = user
+        self.day = day
 
-    return response
+    @slack_event_adapter.on("app_mention")
+    def listen_for_commands(event):
+        def command_hello(event):
+        # import ipdb;ipdb.set_trace()
+            channel = event['event']['channel']
+            client.chat_postMessage(
+                channel=channel,
+                text="Hello :wave: "
+            )
 
-# def send_slack_info(channel,blocks,user):
-#     return client.chat_postEphemeral(
-#         channel=channel,
-#         blocks=blocks,
-#         user = user
-#     )
+        def local_time(event):
+            day = event['event']['ts']
+            channel = event['event']['channel']
+            dt_time = int(float(day))
+            # import ipdb; ipdb.set_trace()
+            dt = datetime.fromtimestamp(dt_time)
+            dat = dt.strftime("%m/%d/%Y, %H:%M:%S")
 
-
-
-
-# ID of channel you want to post message to
-user= 'U03GPQR5UBU'
-channel ='C03HDKLB6KA'
-blocks = [
-    {
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": "New Paid Time Off request from <example.com|Fred Enriquez>\n\n<https://example.com|View request>"
-        }
-    }
-]
-# message = "How are you?"
+            client.chat_postMessage(
+                channel=channel,
+                text = dat
+            )
+        text = event['event']['text']
+        txt = text.lower
+        if txt == 'Hello' or 'hey':
+            return command_hello(event) + local_time(event)
 
 
-try:
-    response = send_slack_message(channel, blocks)
+    @slack_event_adapter.on("app_mention")
+    def command_comment(event):
+
+        channel = event['event']['channel']
+        ts = event['event']['ts']
+        client.chat_postMessage(
+            channel=channel,
+            thread_ts= ts,
+            text = "Hello again :wave:"
+        )
 
 
-except SlackApiError as e:
-    print(f"Error: {e}")
 
-# Start your app
+    @slack_event_adapter.on("app_mention")
+    def command_show_comment(event):
+        channel = event['event']['channel']
+        ts = event['event']['ts']
+        client.conversations_replies(
+            channel=channel,
+            thread_ts= ts,
+        )
+
+
 if __name__ == "__main__":
-    app.start(port=int(os.environ.get("PORT", 3001)))
+    app.run(debug=True)
+    # SlackClient().event_test()
